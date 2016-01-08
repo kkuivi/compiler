@@ -1,0 +1,14 @@
+declare integer a, b, c, d;
+declare set 10 e, f
+
+$
+
+b := 10;
+c := 4;
+
+to b loop
+d:= 2;
+a:= c * (d+5*(6-b))
+endloop
+
+##

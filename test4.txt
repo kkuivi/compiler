@@ -1,0 +1,12 @@
+declare integer a, b, c 
+$
+
+b := 3;
+c := 10;
+
+to b loop
+	a:= c*5;
+	c:= c+1
+endloop
+
+##

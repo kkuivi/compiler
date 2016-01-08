@@ -1,0 +1,11 @@
+declare integer x, a, y
+
+$
+
+read y, x, a;
+
+a:= 5+x;
+
+write a+3, x
+
+##

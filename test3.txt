@@ -1,0 +1,8 @@
+declare integer x, a, y
+
+$
+x:= 1;
+a:= x+7;
+write x, a
+
+##
