@@ -1,14 +1,12 @@
-declare integer a, b, c, d;
-declare set 10 e, f
+declare integer a, b, d
 
 $
 
-b := 10;
-c := 4;
-
+b:= 2;
+d:= 1;
 to b loop
-d:= 2;
-a:= c * (d+5*(6-b))
+	a:= 7+d;
+	d:= 2+a
 endloop
 
 ##

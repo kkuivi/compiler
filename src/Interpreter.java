@@ -16,18 +16,21 @@ public class Interpreter {
 	 * For this project, we can have a maximum of 200 sets,
 	 * and each set can have a maximum size of 10
 	 */
-	public static int[][] set_values = new int[200][10]; 
+	public static int[][] set_values = new int[200][10]; //acts as an address for variables declared as set and stores their corresponding set elements
 	public static int free_set_location = 0;
+	public static final String FILE_EXTENSION = ".txt";
+	public static final String OUTPUT_FILE_EXTENSION = "-output.txt";
+	public static boolean new_session = true; //will be used by the output_token method to determine if this is the first time the compiler is running
 	
 	static String[] strTokens= new String[200]; //used to store actual program tokens as they are found
-	static int tokCounter = -1;
+	static int tokCounter = -1; 
 	
 	
-	static int[] tokens = new int[200];	//used to store token int Value as they are found by scanner
+	static int[] tokens = new int[200];	//used to store integer value of tokens as they are found by scanner
 	static int current_token = 0;
 	static int next_token = current_token + 1;
 	
-	
+	//stores list of keywords
 	 static String[] kwTable = { "if", "else", "read", "write", "declare",
 	  "random", "for", "to", "then", "loop", "fi", "endloop", "set", "integer",
 	  "in" };
@@ -37,16 +40,17 @@ public class Interpreter {
 
 	static final int error = 100;
 	static final int eof = 0; // end of file
-	static final int identifier = 1;
-	static final int constant = 2;
-	static final int set_element = 50; //this will be used in the postfix to denote
-    									//a set element
+	static final int identifier = 1; //integer value for an identifier
+	static final int constant = 2; //integer value for a constant
+	static final int set_element = 50; //integer value for a set element
+	static final int word_element = 128; //integer value denoting an element that is part of a word
 	
-	static final int dollar = 99;
+	static final int dollar = 99; //integer value denoting the end of declare statements. In this
+								 //language all variables have to be declared at the beginning of the program
 	
 	// symbol values
 	static final int assign = 3; // :=
-	static final int endProg = 4; // ##
+	static final int endProg = 4; // ##, denotes the end of a program
 	static final int greaterEq = 5; // >+
 	static final int greater = 6; // >
 	static final int lessEq = 7; // <=
@@ -82,6 +86,7 @@ public class Interpreter {
 	static final int kw_integer = 36; // integer
 	static final int kw_in = 37; // in
 
+	//branch operation values
 	static final int BR = 38;
 	static final int BMZ = 39;
 	static final int BM = 40;
@@ -90,44 +95,50 @@ public class Interpreter {
 	static final int BZ = 43;
 	static final int BNZ = 44;
 	
-	static final int uminus = 45;
+	static final int uminus = 45; //unary minus
 	static final int read  = 46;
 	static final int write = 47;
 	
 	static final int not = 48;
 	
-	static final int numKeywords = 15;
-	static final int numSymbols = 23; 
+	static final int numKeywords = 15; //number of keywords in kwTable
+	static final int numSymbols = 23; //will be used together with the index of the corresponding keyword in kwTable 
+									 //its integer value
 	
 	/*variables needed for scanner*/
-	static char ch;
-	static int tok;
-	static CharBufferedReader reader;
+	static char ch; //stores current character being read by the CharBufferedReader
+	static int tok; //stores integer value of character being read
+	static CharBufferedReader reader; //reads input file
 	
-	static SymbolTable symbolTable;
-	static Execute codeGenerator;
+	static SymbolTable symbolTable; //acts as an address that stores declared variables and their corresponding values
+	static Execute codeGenerator;  //goes through postfix array and executes code
 
 	public static void main(String args[])  throws IOException {
 		
 		/*Scanner Part*/
 		//Start Reading char by char
-		reader = new CharBufferedReader("test5.txt");
+		Scanner scan = new Scanner(System.in);
+		System.out.println("Enter file to read (without the .txt extension):");
+		String filename = scan.next();
+		
+		reader = new CharBufferedReader(filename, FILE_EXTENSION); //will check if the filename exists, gets the correct filename 
 		symbolTable = new SymbolTable();
 		codeGenerator = new Execute();
 		ch = reader.GetChar(); //try to start in scanner
 		
 		System.out.print("IntVal Tokens:\t");
-		while(ch!=reader.eofReached )
+		while(ch!=reader.eofReached ) //while there are more characters to read
 		{
-			int tok = Scanner();
+			int tok = Scanner(); //store token value of current character being read
 			System.out.print(tok + "\t\t");
-			output_token(tok);
+			output_token(tok, reader.getFilename()); //write token value to output text file, 
+													//reader.getFilename() is used because it contains the correct filename (without the .txt extension)
 		}
 		System.out.println();
 		
 		/*Print String Tokens*/
 		System.out.print("String Tokens:\t");
-		for(int i=0; i<strTokens.length && strTokens[i]!=null; i++ ){
+		for(int i=0; i<strTokens.length && strTokens[i]!=null; i++ ){ //goes through the String values of the tokens read and prints them
 			System.out.print(strTokens[i]+"\t\t");
 		}
 		System.out.println();
@@ -136,43 +147,44 @@ public class Interpreter {
 		
 		/*Parser Part*/
 		System.out.println("Parser Notes:");
-		File file = new File("output.txt");
-		read_input(file);
-		if (program()) {
+		File file = new File(reader.getFilename() + OUTPUT_FILE_EXTENSION);
+		readOutputFile(file);
+		if (program()) { //checks if program is syntactically correct
 			System.out.println("----Parser: SUCCESS----");
+			/*Print symbol table */
+			System.out.println("Symbol Table:");
+			for(int i=1; i<100 && symbolTable.symTable[i].name!=null; i++)
+			{
+				System.out.println(symbolTable.symTable[i]);
+			}
+			System.out.println();
+			
+			/*Print postfix array */
+			System.out.println("Postfix Array:");
+			for(int i=0; i<postfix.length ; i++)
+			{
+				System.out.print(postfix[i] + "  |  ");
+			}
+			System.out.println();
+					
+			codeGenerator.RunProg(postfix);
+			System.out.println();
+			System.out.println("----Executed: Symbol Table----");
+			/*Print symbol table again after executing sample program*/
+			System.out.println("Symbol Table:");
+			for(int i=1; i<100 && symbolTable.symTable[i].name!=null; i++)
+			{
+				System.out.println(symbolTable.symTable[i]);
+			}
+			System.out.println();
 		} else {
 			System.out.println("----Parser: FAIL----");
 		}
 		System.out.println();
-		
-		/*Print symbol table */
-		System.out.println("Symbol Table:");
-		for(int i=1; i<100 && symbolTable.symTable[i].name!=null; i++)
-		{
-			System.out.println(symbolTable.symTable[i]);
-		}
-		System.out.println();
-		
-		/*Print postfix array */
-		System.out.println("Postfix Array:");
-		for(int i=0; i<postfix.length ; i++)
-		{
-			System.out.print(postfix[i] + "  |  ");
-		}
-		System.out.println();
-				
-		codeGenerator.RunProg(postfix);
-		
-		/*Print symbol table again after executing sample program*/
-		System.out.println("Symbol Table:");
-		for(int i=1; i<100 && symbolTable.symTable[i].name!=null; i++)
-		{
-			System.out.println(symbolTable.symTable[i]);
-		}
-		System.out.println();
 	}
 
-	public static void read_input(File file) throws FileNotFoundException {
+	//reads the token values in the output file and stores them in the tokens array
+	public static void readOutputFile(File file) throws FileNotFoundException {
 		Scanner filereader = new Scanner(file);
 		int index = 0;
 		while (filereader.hasNextInt()) {
@@ -181,14 +193,16 @@ public class Interpreter {
 		}
 	}
 
+	//moves pointer for the token array to next token 
 	public static void next_token() {
-		if (current_token < 200) {
+		if (current_token < 200) { //the length of the token array is 200
 			current_token = current_token + 1;
 		} else {
 			System.out.println("error: no more tokens");
 		}
 	}
 
+	//moves pointer for the token array to previous token
 	public static void prev_token() {
 		if (current_token >= 0) {
 			current_token = current_token - 1;
@@ -197,6 +211,7 @@ public class Interpreter {
 		}
 	}
 
+	//Prints out an error statement depending on the String errorname
 	public static void error(String errorname) {
 		if (errorname.equalsIgnoreCase("read")) {
 			System.out
@@ -483,10 +498,43 @@ public class Interpreter {
 			System.out
 					.println("Invalid output list structure: An expression or quote must follow ','");
 		}
+		else if(errorname.equalsIgnoreCase("Relation token expected expression in the if statement")){
+			System.out.println("=, <, <=, >, >= , #, or in, expected after expression");
+		}
+		else if(errorname.equalsIgnoreCase("keyword loop expected after expression")){
+			System.out.println("keyword loop expected after expression");
+		}
+		else if(errorname.equalsIgnoreCase("Missing statement group after 'loop' keyword")){
+			System.out.println("Missing statement group after 'loop' keyword");
+		}
+		else if(errorname.equalsIgnoreCase("'endloop' keyword expected after statement group")){
+			System.out.println("'endloop' keyword expected after statement group");
+		}
+		else if(errorname.equalsIgnoreCase("identifier expected 'for' keyword")){
+			System.out.println("identifier expected 'for' keyword");
+		}
+		else if(errorname.equalsIgnoreCase("keyword 'in' expected after identifier")){
+			System.out.println("keyword 'in' expected after identifier");
+		}
+		else if(errorname.equalsIgnoreCase("expression expected after 'in' keyword")){
+			System.out.println("expression expected after 'in' keyword");
+		}
+		else if(errorname.equalsIgnoreCase("keyword 'loop' expected after expression")){
+			System.out.println("keyword 'loop' expected after expression");
+		}
+		else if(errorname.equalsIgnoreCase("statement group expected after 'loop' keyword")){
+			System.out.println("statement group expected after 'loop' keyword");
+		}
+		else if(errorname.equalsIgnoreCase("keyword 'endloop' expected after statement group")){
+			System.out.println("keyword 'endloop' expected after statement group");
+		}
+		else if(errorname.equalsIgnoreCase("Must have letter or number between quotes")){
+			System.out.println("Must have letter or number between quotes");
+		}
 	}
 
+	//checks if program is syntactically correct
 	public static boolean program() { //modified
-		// TODO: Re-evaluate program() method
 		if ((tokens[current_token] == identifier)
 				|| (tokens[current_token] == kw_read)
 				|| (tokens[current_token] == kw_write)
@@ -507,7 +555,6 @@ public class Interpreter {
 		} else if (tokens[current_token] == kw_declare) {
 			if (decl_part()) {
 				if (tokens[current_token] == dollar) {
-					System.out.println("here " + tokens[current_token] );
 					next_token();
 					if (st_group()) {
 						if (tokens[current_token] == endProg) {
@@ -517,7 +564,6 @@ public class Interpreter {
 							return false;
 						}
 					} else {
-						error("Statement group expected after '..'");
 						return false;
 					}
 				} else {
@@ -533,7 +579,8 @@ public class Interpreter {
 			return false;
 		}
 	}
-
+	
+	//checks if syntax for the decl_part rule of the program is correct
 	public static boolean decl_part() {
 		if (decl()) {
 			while (tokens[current_token] == semi) {
@@ -551,15 +598,13 @@ public class Interpreter {
 		}
 	}
 
-	public static boolean decl() {	//Add identifiers to symbol table in this part of the parsing
+	//checks if syntax for the declaration of variables is correct
+	public static boolean decl() {	
 		if (tokens[current_token] == kw_declare) {
-			System.out.println("decl()" + tokens[current_token]);
 			next_token();  
-			System.out.println("decl()" + tokens[current_token]);
-			if (tokens[current_token] == kw_integer) {
+			if (tokens[current_token] == kw_integer) { //for identifiers declared as integers
 				next_token();
-				System.out.println("decl()" + tokens[current_token]);
-				int startIndex =current_token;  //start of identifiers declared of type integer
+				int startIndex =current_token;  //start of identifiers declared as integers
 				if(!identifer_list())
 				{
 					return false;
@@ -568,13 +613,12 @@ public class Interpreter {
 				
 				for(int i=startIndex; i<endIndex; i+=2)
 				{
-					symbolTable.addElement(kw_integer, strTokens[i]);
+					symbolTable.addElement(kw_integer, strTokens[i]); //add identifiers(type & name) to the symbolTable
 				}
 				return true;
-			} else if (tokens[current_token] == kw_set) {
+			} else if (tokens[current_token] == kw_set) { //for identifiers declared as sets
 				next_token();
-				int max_sizeIndex = current_token; //gets position of max size of
-				                                  //set
+				int max_sizeIndex = current_token; //gets the max size of the set declared
 				if (constant()) {
 					int startIndex =current_token;  //start of identifiers declared of type set
 					if (identifer_list()) {
@@ -582,9 +626,8 @@ public class Interpreter {
 						
 						for(int i=startIndex; i<endIndex; i+=2)
 						{
-							//symbolTable.addTypeName("Set", strTokens[i]);
 							int max_size = Integer.parseInt(strTokens[max_sizeIndex]);
-							symbolTable.addSetElement(kw_set, strTokens[i], max_size);
+							symbolTable.addSetElement(kw_set, strTokens[i], max_size); //add identifiers(type & name) to the symbolTable
 						}
 						return true;
 					} else {
@@ -615,11 +658,10 @@ public class Interpreter {
 
 	}
 
+	//checks if the current token is a constant
 	public static boolean constant() {
-		// TODO Re-evaluate constant() method
 		if (tokens[current_token] == constant) {
 			next_token();
-			System.out.println("constant()" + tokens[current_token]);
 			return true;
 		} else {
 			error("constant");
@@ -628,6 +670,7 @@ public class Interpreter {
 		}
 	}
 
+	//checks if the syntax for a list of identifiers is correct or not
 	public static boolean identifer_list() {
 		if (identifier()) {
 			while (tokens[current_token] == comma) {
@@ -645,11 +688,10 @@ public class Interpreter {
 	}
 	
 
+	//checks if the current token  is an identifier
 	public static boolean identifier() {
-		// TODO Re-evaluate identifier() method
 		if (tokens[current_token] == identifier) {
 			next_token();
-			System.out.println("identifier()" + tokens[current_token]);
 			return true;
 		} else {
 			error("identifier");
@@ -657,11 +699,16 @@ public class Interpreter {
 			return false;
 		}
 	}
+	
+	/*checks if the syntax for a list of identifiers is correct or not, but also leaves space in the
+	 * postfix array to store the operations on each identifier*/
 	public static boolean identifer_list(int operation) {
 		if (tokens[current_token] == identifier) {
 			postfix[PFPtr++] = identifier;
-			postfix[PFPtr++] = symbolTable.find(strTokens[current_token]);
-			PFPtr++; //leave a space for read or write operation
+			if(symbolTable.find(strTokens[current_token]) == -1000) //if the identifier cannot be found in the symbol table
+				return false;
+			postfix[PFPtr++] = symbolTable.find(strTokens[current_token]); //returns index of identifier in the symbolTable array
+			PFPtr++; //leave a space in the postfix array to store the read or write operation
 			next_token();
 			while (tokens[current_token] == comma) {
 				next_token();
@@ -670,8 +717,10 @@ public class Interpreter {
 					return false;
 				}
 				postfix[PFPtr++] = identifier;
-				postfix[PFPtr++] = symbolTable.find(strTokens[current_token]);
-				PFPtr++; //leave a space for read or write operation
+				if(symbolTable.find(strTokens[current_token]) == -1000) //if the identifier cannot be found in the symbol table
+					return false;
+				postfix[PFPtr++] = symbolTable.find(strTokens[current_token]);//returns index of identifier in the symbolTable array
+				PFPtr++; //leave a space in the postfix array to store the read or write operation
 				next_token();
 			}
 			return true;
@@ -681,12 +730,10 @@ public class Interpreter {
 		}
 	}
 
-	public static boolean st_group() {
-		
+	//checks if the syntax for a group of statements is correct
+	public static boolean st_group() {	
 		if (st()) {
-			System.out.println("st_group " + tokens[current_token]);
-			while (tokens[current_token] == semi) {
-				System.out.println("st_group " + tokens[current_token]);
+			while (tokens[current_token] == semi) {//while the current token is a semi-colon then check if there is a statement in the following tokens
 				next_token();
 				if (!st()) {
 					error("Invalid statement group structure: "
@@ -702,10 +749,13 @@ public class Interpreter {
 		
 	}
 
-	public static boolean st() {	//modified this method
+	//checks if the syntax for a statement is correct
+	public static boolean st() {	
 		if (tokens[current_token] == identifier) {
 			postfix[PFPtr++] = tokens[current_token];
-			postfix[PFPtr++] = symbolTable.find(strTokens[current_token]);
+			if(symbolTable.find(strTokens[current_token]) == -1000) //if identifier cannot be found in the symbolTable array
+				return false;
+			postfix[PFPtr++] = symbolTable.find(strTokens[current_token]); //add the index of the identifier in symbolTable to the postfix array 
 			next_token(); 
 			if (asgn()) {
 				return true;
@@ -757,63 +807,8 @@ public class Interpreter {
 			return false;
 		}
 	}
-	/*
-	public static boolean loop() {
-		
-		if (loop_part() && tokens[current_token] == kw_loop) {
-			
-			next_token();
-			if (st_group()){				
-				if(tokens[current_token] == kw_endloop) {
-					next_token();
-					return true;
-				}
-			}
-			error("Invalid loop structure: "
-					+ "Stament group and 'endloop' keyword expected after 'loop' keyword");
-			return false;
-		} else {
-			error("loop");
-			return false;
-		}
-	}
-
-	public static boolean loop_part() {	//made changes
-											// TODO error(String errorname) calls for loop_part()
-		if (tokens[current_token-1] == kw_to) { 
-			
-			symbolTable.add("integer", "temp", "0"); //add a temp identifier to symbol table
-			int tempPos = symbolTable.find("temp");
-
-			if (expression()) {
-				return true;
-			} else {
-				error("Invalid loop part structure: "
-						+ "Missing expression after 'to' keyword");
-				return false;
-			}
-		} else if (tokens[current_token-1] == kw_for) {
-			if (tokens[current_token] == identifier) {
-				next_token();
-				if (tokens[current_token] == kw_in) {
-					next_token();
-					if (expression()) {
-						return true;
-					}
-				}
-			}
-			error("Invalid loop part structure: "
-					+ "Missing identifier after  'for' keyword");
-			return false;
-
-		} else {
-			next_token();
-			error("loop part");
-			return false;
-		}
-
-	}
-	*/
+	
+	//checks if the syntax for a loop is correct
 	public static boolean loop()
 	{
 		if (tokens[current_token-1] == kw_to) { 
@@ -830,6 +825,7 @@ public class Interpreter {
 				return false;
 			} 
 			if (tokens[current_token] != kw_loop) {
+				error("keyword loop expected after expression");
 				return false;
 			}
 			
@@ -840,6 +836,7 @@ public class Interpreter {
 			
 			next_token();
 			if (!st_group()){
+				error("Missing statement group after 'loop' keyword");
 				return false;
 			}
 			
@@ -858,6 +855,7 @@ public class Interpreter {
 			postfix[save3+1] = PFPtr;
 			
 			if(tokens[current_token] != kw_endloop) {
+				error("'endloop' keyword expected after statement group");
 				return false;
 			}
 			next_token();
@@ -868,173 +866,140 @@ public class Interpreter {
 		else if (tokens[current_token-1] == kw_for) {
 			
 			if (tokens[current_token] != identifier) {
+				error("identifier expected 'for' keyword");
 				return false;
 			}
 			next_token();
 			if (tokens[current_token] != kw_in) {
+				error("keyword 'in' expected after identifier");
 				return false;
 			}
 			next_token();
 			if (!expression()) {
+				error("expression expected after 'in' keyword");
 				return false;
 			}
 			if (tokens[current_token] != kw_loop) {
+				error("keyword 'loop' expected after expression");
 				return false;
 			}
 			next_token();
 			if (!st_group()){
+				error("statement group expected after 'loop' keyword");
 				return false;
 			}
 			if(tokens[current_token] != kw_endloop) {
+				error("keyword 'endloop' expected after statement group");
 				return false;
 			}
 			next_token();
-			return true;
-			
-
+			return true;	
 		} 
 		else {
 			next_token();
 			error("loop part");
 			return false;
 		}
-		//return false;
 	}
 	
+	//checks if the syntax for a conditional statement is correct
 	public static boolean cond() {
-		// TODO error(String errorname) for cond()
-		/*
-		 * grammar rule:<cond> := if <expression> (=|>|<|>=|<=|#|in)
-		 * <expression> then <st_group> [else <st_group>] fi
-		 */
-		
 		int code = 0;
 		int save1 = 0;
 		int save2 = 0;
 		// assumed keyword 'if' was already recognized
 		if (expression()) // expression took care of getting next token
 		{
-			System.out.println("Expression1 true");
 			if (tokens[current_token] != equal
 					&& tokens[current_token] != greater
 					&& tokens[current_token] != less
 					&& tokens[current_token] != greaterEq
 					&& tokens[current_token] != lessEq
-					&& tokens[current_token] != not
-					&& tokens[current_token] != kw_in) 
-			{
+					&& tokens[current_token] != not) {
+				error("Relation token expected expression in the if statement");
 				return false;
 			}
-			if(tokens[current_token] == equal)
-			{
+			if (tokens[current_token] == equal) {
 				code = BNZ;
 			}
-			if(tokens[current_token] == greater)
-			{
+			if (tokens[current_token] == greater) {
 				code = BMZ;
 			}
-			if(tokens[current_token] == less)
-			{
+			if (tokens[current_token] == less) {
 				code = BPZ;
 			}
-			if(tokens[current_token] == greaterEq)
-			{
+			if (tokens[current_token] == greaterEq) {
 				code = BM;
 			}
-			if(tokens[current_token] == lessEq)
-			{
+			if (tokens[current_token] == lessEq) {
 				code = BP;
 			}
-			if(tokens[current_token] == not)
-			{
+			if (tokens[current_token] == not) {
 				code = BZ;
 			}
-			if(tokens[current_token] == kw_in)
-			{
-				//need to do
-			}
-				System.out.println("relation true");
-				next_token(); // increment the token index
-				if (expression()) 
-				{
-					System.out.println("Expression2 true");
-					
-					postfix[PFPtr++] = minus;
-					postfix[PFPtr++] = constant;
-					save1 = PFPtr;
-					PFPtr++;
-					postfix[PFPtr++] = code;
-					
-					if (tokens[current_token] == kw_then) 
-					{
-						System.out.println("kw_then true");
-						next_token();
-						if (st_group()) 
-						{
-							System.out.println("st_group 1 true");
-							if (tokens[current_token] == kw_else) 
-							{
-								System.out.println("kw_else true");
-								next_token();
-								
-								postfix[PFPtr++] = constant;
-								save2 = PFPtr;
-								PFPtr++;
-								postfix[PFPtr++] = BR;
-								postfix[save1] = PFPtr;
-								
-								if (!(st_group())) {
-									System.out.println("st_group 2 false");
-									// error: non st group followed the else
-									// statement
-									error("Non statement group follwed the else statement");
-									return false;
-								}
-								
-								//postfix[save2] = PFPtr;
-							
-								if (tokens[current_token] == kw_fi) {
-									postfix[save2] = PFPtr;
-									System.out.println("kw_fi true");
-									next_token();
-									return true;
-								}
-							} // no error follows this if statement because its
-								// optional in the grammar
-							if (tokens[current_token] == kw_fi) {
-								postfix[save1] = PFPtr;
-								System.out.println("kw_fi true");
-								next_token();
-								return true;
-							} else {
-								
-								next_token(); // before error message still get
-												// next token for following
-												// methods
-								// error: no end 'fi' marker to if statement
-								error("no end 'fi' marker to if statement");
+
+			next_token(); // increment the token index
+			if (expression()) {
+				postfix[PFPtr++] = minus;
+				postfix[PFPtr++] = constant;
+				save1 = PFPtr;
+				PFPtr++;
+				postfix[PFPtr++] = code;
+
+				if (tokens[current_token] == kw_then) {
+					next_token();
+					if (st_group()) {
+						if (tokens[current_token] == kw_else) {
+							next_token();
+
+							postfix[PFPtr++] = constant;
+							save2 = PFPtr;
+							PFPtr++;
+							postfix[PFPtr++] = BR;
+							postfix[save1] = PFPtr;
+
+							if (!(st_group())) {
+								// error: non st group followed the else
+								// statement
+								error("Non statement group follwed the else statement");
 								return false;
 							}
+
+							if (tokens[current_token] == kw_fi) {
+								postfix[save2] = PFPtr;
+								next_token();
+								return true;
+							}
+						} // no error follows this if statement because its
+							// optional in the grammar
+						if (tokens[current_token] == kw_fi) {
+							postfix[save1] = PFPtr;
+							next_token();
+							return true;
 						} else {
-							// error: no st_group followed kw_then
-							error("no statement group followed by keyword 'then'");
+
+							next_token(); // before error message still get
+											// next token for following
+											// methods
+							// error: no end 'fi' marker to if statement
+							error("no end 'fi' marker to if statement");
 							return false;
 						}
 					} else {
-						// error: no kw_then followed expression
-						error("no 'then' keyword followed expression");
+						// error: no st_group followed kw_then
+						error("no statement group followed by keyword 'then'");
 						return false;
 					}
 				} else {
-					// error: no expression followed the relation token
-					error("no expression followed the relation token");
+					// error: no kw_then followed expression
+					error("no 'then' keyword followed expression");
 					return false;
 				}
-			/*} else {
-				// error: no relation token followed expression
-				error("no relation token followed expression");
+			} else {
+				// error: no expression followed the relation token
+				error("no expression followed the relation token");
 				return false;
-			}*/
+			}
 		} else {
 			// don't need to call next_token because expression() took care of
 			// that
@@ -1044,7 +1009,8 @@ public class Interpreter {
 		}
 	}
 
-	public static boolean write() { //modified
+	//checks if the syntax for a write statement is correct
+	public static boolean write() {
 		if (output_list()) {
 			return true;
 		} 
@@ -1054,6 +1020,7 @@ public class Interpreter {
 		}
 	}
 
+	//checks if the syntax for an output list statement is correct
 	public static boolean output_list() {
 		if ((tokens[current_token] == identifier)
 				|| (tokens[current_token] == constant)
@@ -1077,6 +1044,7 @@ public class Interpreter {
 						if (!quote()) {
 							return false;
 						}
+						postfix[PFPtr++] = kw_write;
 					} else {
 						error("Invalid output list structure: An expression or quote must follow ','");
 						return false;
@@ -1090,6 +1058,7 @@ public class Interpreter {
 
 		else if (tokens[current_token] == quote) {
 			if (quote()) {
+				postfix[PFPtr++] = kw_write;
 				while (tokens[current_token] == comma) {
 					next_token();
 					if ((tokens[current_token] == identifier)
@@ -1100,10 +1069,12 @@ public class Interpreter {
 						if (!expression()) {
 							return false;
 						}
+						postfix[PFPtr++] = kw_write;
 					} else if (tokens[current_token] == quote) {
 						if (!quote()) {
 							return false;
 						}
+						postfix[PFPtr++] = kw_write;
 					} else {
 						error("Invalid output list structure: An expression or quote must follow ','");
 						return false;
@@ -1123,6 +1094,7 @@ public class Interpreter {
 
 	}
 
+	//checks if the syntax for a quote is correct
 	public static boolean quote() {
 		if (tokens[current_token] == quote) {
 			next_token();
@@ -1145,25 +1117,44 @@ public class Interpreter {
 		}
 	}
 
+	//checks if the syntax for a word is correct
 	public static boolean word() {
-		if (tokens[current_token] == identifier) {
+		if (tokens[current_token] == identifier || tokens[current_token] == constant) {
+			String word = strTokens[current_token];
+			addCharValuesToPostFix(word);
 			next_token();
-			return true;
+			while(tokens[current_token] != quote){ //while the ending quote has not been encountered add the next digits or letters to the postfix array 
+				if(tokens[current_token] == identifier || tokens[current_token] == constant){
+					word = strTokens[current_token];
+					addCharValuesToPostFix(word);
+				}
+				else{
+					error("Must have letter or number between quotes");
+					next_token();
+					return false;
+				}
+				next_token(); 
+			}
+			return true; //no next_token method is called before the return statement because it is already called before the while loop and in the while loop
 		}
-
-		else if (tokens[current_token] == constant) {
-			next_token();
-			return true;
-		} else {
+		
+		else {
 			next_token();
 			error("Invalid word structure");
 			return false;
 		}
-
 	}
 
+	//converts characters to their integer values and adds them to the postfix array as word_elements
+	private static void addCharValuesToPostFix(String word) {
+		for(int i = 0; i < word.length(); i ++){
+			postfix[PFPtr++] = word_element;
+			postfix[PFPtr++] = (int) word.charAt(i); //store integer value of character in postfix array
+		}
+	}
+
+	//checks if the syntax for an expression is correct
 	public static boolean expression() {
-		
 		if (tokens[current_token] == kw_random) {
 			next_token();
 			if (term()) {
@@ -1184,18 +1175,14 @@ public class Interpreter {
 		} else if (term()) {
 			while ((tokens[current_token] == plus)
 					|| (tokens[current_token] == minus)) {
-				System.out.println("expression " + tokens[current_token]);
 				int oper = tokens[current_token];
 				next_token();
-				System.out.println("after adding operator "
-						+ tokens[current_token]);
 				if (!term()) {
 					error("Invalid expression structure: "
 							+ "term expected after '+' or '-'");
 					return false;
 				}
-				postfix[PFPtr++] = oper;
-				
+				postfix[PFPtr++] = oper;			
 			}
 			return true;
 		}
@@ -1207,6 +1194,7 @@ public class Interpreter {
 		
 	}
 
+	//checks if the current token is an adding operator
 	public static boolean adding_operator() {
 		if (tokens[current_token] == plus) {
 			next_token();
@@ -1220,6 +1208,7 @@ public class Interpreter {
 		}
 	}
 
+	//checks if the syntax for a term is correct
 	public static boolean term() {
 		if (factor()) {
 			while ((tokens[current_token] == mult)
@@ -1239,8 +1228,8 @@ public class Interpreter {
 		}
 	}
 
+	//checks if the current token is a multiplying operator
 	public static boolean multiplying_operator() {
-		System.out.println("multiplying operator " + tokens[current_token]);
 		if (tokens[current_token] == mult) {
 			next_token();
 			return true;
@@ -1253,7 +1242,8 @@ public class Interpreter {
 		}
 	}
 
-	public static boolean read() { //modified
+	//checks if the syntax for a read statement is correct
+	public static boolean read() { 
 		int start, end;
 		start= PFPtr;
 		
@@ -1267,10 +1257,10 @@ public class Interpreter {
 		} else {
 			return false;
 		}
-
 	}
 
-	public static boolean asgn() { //modified
+	//checks if the syntax for an assign statement is correct
+	public static boolean asgn() { 
 		
 		if (tokens[current_token] == assign) {
 			next_token();
@@ -1288,6 +1278,7 @@ public class Interpreter {
 			
 	}
 
+	//checks if the syntax for a factor is correct
 	public static boolean factor() {
 		if (tokens[current_token] == minus) {
 			next_token();
@@ -1306,20 +1297,23 @@ public class Interpreter {
 
 		else {
 			error("factor");
-			next_token();
+			//next_token();
 			return false;
 		}
 	}
 
+	//checks if the syntax for a factor2 is correct
 	public static boolean factor2() {	//modified
-		System.out.println("factor2 " + tokens[current_token]);
 		if (tokens[current_token] == identifier
 				|| tokens[current_token] == constant) {
 			int operand = tokens[current_token];
 			if(operand==identifier)
 			{
 				postfix[PFPtr++] = identifier;
-				postfix[PFPtr++] = symbolTable.find(strTokens[current_token]);
+				if(symbolTable.find(strTokens[current_token]) == -1000) //if the variable is not in the symbolTable, then it was not initialized
+					return false;
+				else
+					postfix[PFPtr++] = symbolTable.find(strTokens[current_token]); //add the index of the identifier in symbolTable to the postfix array
 			}
 			else
 			{
@@ -1360,9 +1354,9 @@ public class Interpreter {
 			return false;
 		}
 	}
-
-	public static boolean set() { //modified today
 	
+	//checks if the syntax for a set is correct
+	public static boolean set() {
 		if (tokens[current_token] == rbrac) {
 			next_token();
 			return true;
@@ -1382,6 +1376,7 @@ public class Interpreter {
 			
 	}
 
+	//checks if the syntax for a list of set elements is correct
 	public static boolean element_list() {
 		if (element()) {
 			while (tokens[current_token] == comma) {
@@ -1398,6 +1393,7 @@ public class Interpreter {
 		}
 	}
 
+	//checks if the syntax for a set element is correct
 	public static boolean element() {
 		if (tokens[current_token] == constant) {
 			int startNumber = Integer.parseInt(strTokens[current_token]);
@@ -1405,10 +1401,12 @@ public class Interpreter {
 			postfix[PFPtr++] = set_element;
 			postfix[PFPtr++] = Integer.parseInt(strTokens[current_token]);
 			next_token();
-			if (tokens[current_token] == cont) {
+			if (tokens[current_token] == cont) { //if current token is ".." then store consecutive integers from current number to end number to the postfix array
 				next_token();
 				if (tokens[current_token] == constant) {
 					int endNumber = Integer.parseInt(strTokens[current_token]);
+					currentNumber++; //update currentNumber because previous number was already
+									//add to the postfix array
 					while(currentNumber <= endNumber){
 						postfix[PFPtr++] = set_element;
 						postfix[PFPtr++] = currentNumber;
@@ -1430,56 +1428,58 @@ public class Interpreter {
 		}
 	}
 	
-	/*Scanner methods*/
+	/*Scanner methods
+	 * Returns the token value of the current character being read*/
 	public static int Scanner() throws IOException{
 		while(ch==' ') //ignore leading or ending blank spaces
 		{
-			ch = reader.GetChar();
+			ch = reader.GetChar(); //get the next character
 		}
 		while(ch=='\t') //ignore leading or ending tabs
 		{
-			ch = reader.GetChar();
+			ch = reader.GetChar(); //get the next character
 		}
 		
 		//check for identifiers and keywords
 		if(ch >= 'a' && ch<= 'z' ) 
 		{
-			String str="";
-			boolean kWord = false;
+			StringBuilder str= new StringBuilder();
+			boolean kWord = false; //stores whether string is a keyword
 			while((ch>='a' && ch<='z')||(ch>='0' && ch<='9'))
 			{
-				str = str+ch;
+				str.append(ch);
 				ch=reader.GetChar();
 			}
-			for(int i =0; i<numKeywords; i++)
+			for(int i =0; i<numKeywords; i++) //check if string is a keyword
 			{
-				if(str.equals(kwTable[i]))
+				
+				if(str.toString().equals(kwTable[i]))
 				{
 					strTokens[tokCounter+=1] = kwTable[i]; //added
-					tok = i+numSymbols;
+					tok = i+numSymbols; //because the integer value for each keyword is equal to its index in the kwTable array + numSymbols
 					kWord = true;
 					break;
 				}
 			}
-			if(!kWord)
+			if(!kWord) //if string is not a keyword
 			{
-				strTokens[tokCounter+=1] = str; //added
+				strTokens[tokCounter+=1] = str.toString(); //added
 				tok = identifier;
 			}
 		}
 		else if(ch>='0' && ch<='9')
 		{
-			String str="";
+			StringBuilder str = new StringBuilder();
 			while(ch>='0' && ch<='9')
 			{
-				str = str+ch;
+				str.append(ch);
 				ch=reader.GetChar();
 			}
-			strTokens[tokCounter+=1] = str; //added
+			strTokens[tokCounter+=1] = str.toString(); //added
 			tok = constant;
 		}
 		//check for two token symbols
-		else if(ch==':')
+		else if(ch==':') //check if token is :=
 		{
 			ch = reader.GetChar();
 			if(ch=='='){
@@ -1491,7 +1491,7 @@ public class Interpreter {
 				tok = error;
 			}
 		}
-		else if(ch=='#')
+		else if(ch=='#') //check if token is # or ##
 		{
 			ch = reader.GetChar();
 			if(ch=='#'){
@@ -1504,7 +1504,7 @@ public class Interpreter {
 				tok = not;
 			}
 		}
-		else if(ch=='.')
+		else if(ch=='.') //check if token is ..
 		{
 			ch = reader.GetChar();
 			if(ch=='.'){
@@ -1516,7 +1516,7 @@ public class Interpreter {
 				tok = error;
 			}
 		}
-		else if(ch=='>')
+		else if(ch=='>') //check if token is >= or >
 		{
 			ch = reader.GetChar();
 			if(ch=='='){
@@ -1529,7 +1529,7 @@ public class Interpreter {
 				tok = greater;
 			}
 		}
-		else if(ch=='<')
+		else if(ch=='<') //check if token is <= or <
 		{
 			ch = reader.GetChar();
 			if(ch=='='){
@@ -1542,7 +1542,7 @@ public class Interpreter {
 				tok = less;
 			}
 		}
-		else if(ch=='-')
+		else if(ch=='-') //check if token is -- or -
 		{
 			ch = reader.GetChar();
 			if(ch=='-'){
@@ -1557,67 +1557,67 @@ public class Interpreter {
 			}
 
 		}
-		else if(ch=='+')
+		else if(ch=='+') //check if token is +
 		{
 			strTokens[tokCounter+=1] = "+"; //added
 			tok = plus;
 			ch = reader.GetChar();
 		}
-		else if(ch=='*')
+		else if(ch=='*') //check if token is *
 		{
-			strTokens[tokCounter+=1] = "*="; //added
+			strTokens[tokCounter+=1] = "*="; //added, store as *= in strToken array
 			tok = mult;
 			ch = reader.GetChar();
 		}
-		else if(ch=='/')
+		else if(ch=='/') //check if token is /
 		{
 			strTokens[tokCounter+=1] = "/"; //added
 			tok = div;
 			ch = reader.GetChar();
 		}
-		else if(ch=='(')
+		else if(ch=='(') //check if token is (
 		{
 			strTokens[tokCounter+=1] = "("; //added
 			tok = lpar;
 			ch = reader.GetChar();
 		}
-		else if(ch==')')
+		else if(ch==')') //check if token is )
 		{
 			strTokens[tokCounter+=1] = ")"; //added
 			tok = rpar;
 			ch = reader.GetChar();
 		}
-		else if(ch=='{')
+		else if(ch=='{') //check if token is {
 		{
 			strTokens[tokCounter+=1] = "{"; //added
 			tok = lbrac;
 			ch = reader.GetChar();
 		}
-		else if(ch=='}')
+		else if(ch=='}') //check if token is }
 		{
 			strTokens[tokCounter+=1] = "}"; //added
 			tok = rbrac;
 			ch = reader.GetChar();
 		}
-		else if(ch=='=')
+		else if(ch=='=') //check if token is =
 		{
 			strTokens[tokCounter+=1] = "="; //added
 			tok = equal;
 			ch = reader.GetChar();
 		}
-		else if(ch==',')
+		else if(ch==',') //check if token is ,
 		{
 			strTokens[tokCounter+=1] = ","; //added
 			tok = comma;
 			ch = reader.GetChar();
 		}
-		else if(ch==';')
+		else if(ch==';') //check if token is ;
 		{
 			strTokens[tokCounter+=1] = ";"; //added
 			tok = semi;
 			ch = reader.GetChar();
 		}
-		else if(ch=='\'')
+		else if(ch=='\'') //check if token is '
 		{
 			strTokens[tokCounter+=1] = "\'"; //added
 			tok = quote;
@@ -1629,13 +1629,13 @@ public class Interpreter {
 			*/
 			ch = reader.GetChar();
 		}
-		else if(ch=='$')
+		else if(ch=='$') //check if token is $
 		{
 			strTokens[tokCounter+=1] = "$"; //added
 			tok = dollar;
 			ch = reader.GetChar();
 		}
-		else if(ch=='&'){
+		else if(ch=='&'){ //check is token is &
 			strTokens[tokCounter+=1] = "&"; //added
 			return tok = eof;
 		}
@@ -1646,16 +1646,33 @@ public class Interpreter {
 		return tok;
 	}
 	
-	public static void output_token(int tok) throws IOException{
-	
-		File file = new File("output.txt");
-		FileWriter fw = new FileWriter(file, true);
+	//writes integer values of tokens being read to a text file
+	public static void output_token(int tok, String input_filename) throws IOException{
+		File file = new File(input_filename + OUTPUT_FILE_EXTENSION);
+		FileWriter fw;
+		/*if the file exists but are currently running a new session of the compiler 
+		 * then overwrite the existing output file*/
+		if(file.exists() && new_session){ 
+			fw = new FileWriter(file, false);
+			new_session = false;
+		}
+		/*if the file exists but are currently running an old session of the compiler then
+		 * append subsequent tokens to the end of the output file*/
+		else if(file.exists() && !new_session){
+			fw = new FileWriter(file, true);
+		}
+		/*if the file does not exist, then create a new file, and update the new_session
+		 * variable*/
+		else{
+			fw = new FileWriter(file);
+			new_session = false;
+		}
 		BufferedWriter bw = new BufferedWriter(fw);
 		
 		//for next line
-		if(tok == semi)
+		if(tok == semi) //token is a semi-colon
 		{
-			bw.write(tok + "\n");
+			bw.write(tok + "\n"); 
 		}
 		//otherwise print number
 		else
@@ -1664,13 +1681,5 @@ public class Interpreter {
 		}
 		bw.close();
 	}
-	
-	
-	public static void runProg(int[] postfix) 
-	{
-		
-	}
-	
-
 }
 

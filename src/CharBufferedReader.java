@@ -1,7 +1,7 @@
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Scanner;
 
 
 public class CharBufferedReader 
@@ -9,15 +9,34 @@ public class CharBufferedReader
 	private BufferedReader reader = null; 
 	private int index; // index of the current char in fileLine
 	private String fileLine;
-	private boolean eof = false;
+	private boolean eof = false; //stores whether end of line has been reached
 	public char eofReached = '&';
 	public boolean skipLine = false;
+	private String filename; //name of the file without the .txt extension
 	
-	public CharBufferedReader(String fileName) throws IOException
+	public CharBufferedReader(String fileName, String file_extension) throws IOException
 	{
-		reader = new BufferedReader(new FileReader(fileName)); //add try catch here
-		index = 0;
-		fileLine = reader.readLine();
+		boolean exists = false;
+		/*error check to ensure the filename entered exists*/
+		while(!exists){
+			try{
+				reader = new BufferedReader(new FileReader(fileName + file_extension));
+				exists = true;
+				index = 0;
+				this.filename = fileName; //sets the filename variable to the correct filename
+				fileLine = reader.readLine();
+			}
+			catch(Exception e){
+				Scanner scan = new Scanner(System.in);
+				System.out.println("File does not exist, try again (without the .txt extension):");
+				fileName = scan.next();
+			}
+		}
+	}
+	
+	//returns the name of the file (without the .txt extension) being read from
+	public String getFilename(){
+		return filename;
 	}
 	
 
@@ -37,7 +56,7 @@ public class CharBufferedReader
 				index = 0;
 				return ' ';
 			}
-			//if there is no line to read after the commented line then that is the enf of the file
+			//if there is no line to read after the commented line then that is the end of the file
 			else 
 			{
 				eof = true;

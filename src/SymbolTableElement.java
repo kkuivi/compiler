@@ -5,7 +5,7 @@
 public class SymbolTableElement extends Interpreter {
 	public int type;
 	public String name;
-	public int value;
+	public int value; //if type is a set then this stores its location in the set_values array; if type is integer then this stores its integer value
 	public int max_size;
 	public int curr_size;
 	public boolean init;
@@ -25,7 +25,7 @@ public class SymbolTableElement extends Interpreter {
 	public void setValue(int val)
 	{
 		this.value = val;
-		this.init = true;
+		this.init = true; //once a value has been set to a variable then it is marked as initialized
 	}
 	public void set_SetValue(int[] values){
 		this.value = free_set_location;

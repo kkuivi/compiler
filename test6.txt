@@ -1,12 +1,7 @@
-declare integer x, y, z 
+declare set 10 x
+
 $
-x:= 0;
-z:= 2;
-y:= 7;
-if z > y then
-	x:= 6
-else
-	x:= 100
-fi
+
+x := {1,2,4,5,7} + {1,7,5,10,11,15,20}
 
 ##

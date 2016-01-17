@@ -1,12 +1,15 @@
-declare integer a, b, c 
+declare integer x, y, z 
+
 $
 
-b := 3;
-c := 10;
-
-to b loop
-	a:= c*5;
-	c:= c+1
-endloop
+x:= 0;
+z:= 2;
+y:= 7;
+if z > y then
+	x:= 6
+else
+	x:= 100;
+	y:= x/z
+fi
 
 ##

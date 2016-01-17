@@ -60,12 +60,6 @@ public class SymbolTable {
 	{
 		for(int i=1; i<symTable.length; i++)
 		{
-			/*
-			if(symTable[i]!=null && symTable[i].name.equals(str))
-			{
-				return i;
-			}
-			*/
 			if(symTable[i]!=null && symTable[i].name!=null)
 			{
 				if(symTable[i].name.equals(str))
@@ -74,11 +68,11 @@ public class SymbolTable {
 				}
 			}
 		}
-		System.out.println("ERROR: Variable not found in symbol table");
+		System.out.println("ERROR: Variable " + str + " not found in symbol table");
 		return -1000; 
 	}
 	public int getVal(int position) {
-		if(symTable[position].initialized()){
+		if(symTable[position].initialized()){ //if the variable at the given position is initialized then return it's value 
 			return symTable[position].getValue();
 		}
 		System.out.println("ERROR: Variable not initialized");
@@ -86,11 +80,17 @@ public class SymbolTable {
 	}
 	public int[] getSetVal(int position) {
 		int[] zero_set = {0,0,0,0};
-		if(symTable[position].initialized()){
+		if(symTable[position].initialized()){ //if the set variable at the given position is initialized then return it's value
 			return symTable[position].get_setValue();
 		}
 		System.out.println("ERROR: Variable not initialized");
 		return zero_set; 
+	}
+	public int getType(int position){
+		if(symTable[position].name != null)
+			return symTable[position].getType();
+		System.out.println("ERROR: Variable not declared");
+		return -1000;
 	}
 }
 	

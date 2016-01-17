@@ -1,8 +1,12 @@
-declare integer x, a, y
+declare integer x, y, z 
 
 $
-x:= 1;
-a:= x+7;
-write x, a
+
+x:= 0;
+z:= 2;
+y:= 7;
+if z+8 > y then
+	x:= 6
+fi
 
 ##
