@@ -1,5 +1,7 @@
 # compiler
-A part of a final project for a class, I created a simple compiler for a custom mini language implemented with Java.
+
+## Overview
+A part of a final project for a class, I created a simple compiler for a custom mini language implemented in Java.
 
 ## Components of the Compiler
 Components of the compiler that were implemented are:
